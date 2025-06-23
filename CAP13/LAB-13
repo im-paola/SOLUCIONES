@@ -1,0 +1,141 @@
+
+ - programa rolodex para buscar,
+#        agregar, eliminar y cambiar entradas de la agenda telefonica
+#
+
+#
+# Establece PHONEBOOK para que apunte al archivo de la agenda telefonica
+# y exportalo para que otros programas lo conozcan
+# si ya esta establecido al entrar, entonces dejalo como esta
+#
+
+: ${PHONEBOOK:="$HOME/phonebook"}
+export PHONEBOOK
+if [ ! -e "$PHONEBOOK" ]
+then
+    echo "$PHONEBOOK no existe!"
+    printf "¿Desea que lo cree por usted (y/n)? "
+    read answer
+
+    if [ "$answer" != y ]
+    then
+        exit 1
+    fi
+
+    > $PHONEBOOK || exit 1    # salir si la creacion falla
+fi
+
+#Funcion isYes
+
+isYes() {
+
+if [ $# -ne 1 ]; then
+    exit 1
+fi
+
+input=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+# Check if the input matches any of the valid "yes" responses
+if [[ "$input" == "yes" || "$input" == "y" ]]; then
+    exit 0
+else
+    exit 1
+fi
+
+if [ $# -ne 1 ]; then
+    exit 1
+fi
+
+if [[ "$1" == "yes" || "$1" == "Yes" || "$1" == "YES" || "$1" == "y" || "$1" == "Y" ]]; then
+    exit 0
+else
+    exit 1
+fi
+
+} 
+
+#
+# Si se proporcionan argumentos, entonces hacer una busqueda
+#
+
+if [ "$#" -ne 0 ]
+then
+    ./lu "$@"
+    exit
+fi
+
+#
+# Establecer trampa en interrupcion (tecla DELETE) para continuar el bucle
+#
+
+trap "continue" 2
+
+#
+# Bucle hasta que el usuario seleccione 'salir'
+#
+
+while true
+do
+
+    #
+    # Mostrar menu
+    #
+
+    printf '
+
+¿Que le gustaria hacer?
+1. Buscar a alguien
+2. Agregar a alguien a la agenda telefonica
+3. Eliminar a alguien de la agenda telefonica
+4. Cambiar una entrada en la agenda telefonica
+5. Listar todos los nombres y numeros en la agenda telefonica
+6. Salir de este programa
+Por favor seleccione una de las opciones anteriores (1-6): '
+
+    #
+    # Leer y procesar la seleccion
+    #
+
+    read choice
+    echo
+    case "$choice" in
+
+        1) printf "Ingrese el nombre a buscar: "
+           read name
+           if [ -z "$name" ]
+           then
+               echo "Busqueda ignorada"
+           else
+               ./lu "$name"
+           fi;;
+
+        2) ./add;;
+
+        3) printf "Ingrese el nombre a eliminar: "
+           read name
+           if [ -z "$name" ]
+           then
+               echo "Eliminacion ignorada"
+           else
+               ./rem "$name"
+           fi;;
+
+        4) printf "Ingrese el nombre a cambiar: "
+           read name
+
+           if [ -z "$name" ]
+           then
+               echo "Cambio ignorado"
+           else
+               ./change "$name"
+           fi;;
+
+        5) ./listall;;
+
+        6) exit 0;;
+
+        *) echo "Opcion invalida";;
+
+    esac
+done
+
