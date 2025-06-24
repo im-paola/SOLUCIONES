@@ -1,6 +1,4 @@
-
- - programa rolodex para buscar,
-#        agregar, eliminar y cambiar entradas de la agenda telefonica
+# agregar, eliminar y cambiar entradas de la agenda telefonica
 #
 
 #
@@ -25,34 +23,50 @@ then
     > $PHONEBOOK || exit 1    # salir si la creacion falla
 fi
 
+#Funcion continuar
+
+continuar() {
+    while true; do
+        printf "¿Desea continuar? (y/n): "
+        read input
+        input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+
+        if [[ "$input" == "y" || "$input" == "yes" ]]; then
+            return 0  # Repetir isYes
+        elif [[ "$input" == "n" || "$input" == "no" ]]; then
+            echo "Regresando al menu principal..."
+            return 1  # Salir de isYes
+        else
+            echo "Entrada invalida. Por favor responda con 'y' o 'n'."
+        fi
+    done
+}
+
 #Funcion isYes
 
 isYes() {
+    while true; do
+        while true; do
+            printf "Ingrese la palabra 'yes': "
+            read palabra
+            palabra=$(echo "$palabra" | tr '[:upper:]' '[:lower:]')
 
-if [ $# -ne 1 ]; then
-    exit 1
-fi
+            if [[ "$palabra" == "yes" ]]; then
+                echo "Palabra valida."
+                break
+            else
+                echo "Palabra incorrecta. Intente de nuevo."
+            fi
+        done
 
-input=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-
-# Check if the input matches any of the valid "yes" responses
-if [[ "$input" == "yes" || "$input" == "y" ]]; then
-    exit 0
-else
-    exit 1
-fi
-
-if [ $# -ne 1 ]; then
-    exit 1
-fi
-
-if [[ "$1" == "yes" || "$1" == "Yes" || "$1" == "YES" || "$1" == "y" || "$1" == "Y" ]]; then
-    exit 0
-else
-    exit 1
-fi
-
-} 
+        if continuar; then
+            echo "Reiniciando verificacion..."
+            continue  # Volver a pedir 'yes'
+        else
+            break  # Salir de isYes y volver al menu
+        fi
+    done
+}
 
 #
 # Si se proporcionan argumentos, entonces hacer una busqueda
@@ -89,8 +103,9 @@ do
 3. Eliminar a alguien de la agenda telefonica
 4. Cambiar una entrada en la agenda telefonica
 5. Listar todos los nombres y numeros en la agenda telefonica
-6. Salir de este programa
-Por favor seleccione una de las opciones anteriores (1-6): '
+6. Programa isYes
+7. Salir de este programa
+Por favor seleccione una de las opciones anteriores (1-7): '
 
     #
     # Leer y procesar la seleccion
@@ -132,7 +147,11 @@ Por favor seleccione una de las opciones anteriores (1-6): '
 
         5) ./listall;;
 
-        6) exit 0;;
+        6) echo "Programa isYes"
+           isYes
+           ;;
+
+        7) exit 0;;
 
         *) echo "Opcion invalida";;
 
