@@ -49,4 +49,3 @@ Detecta secuencias de tres dígitos seguidos sin interrupciones.
 ^\(.\).*\1$
 Revisa si el primer y el último carácter de una línea son exactamente iguales.
 
-
