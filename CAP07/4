@@ -7,8 +7,6 @@
 # 0
 # $
 
-# ¿Qué ocurre si se escribe un valor no entero? ¿Qué ocurre si se omite el argumento?
-
 
 if [ -z "$1" ]; then
     echo "Error: No se proporcionó ningún argumento."
@@ -35,4 +33,12 @@ fi
 result=$(($1 * 2))
 echo $result
 
+
+
+# ¿Qué sucede si se escribe un valor no entero? ¿Y si se omite el argumento?
+#Si se ingresa un valor no entero, entonces devolverá 0 si todos los
+#caracteres son alfabéticos; de lo contrario, lanzará un error de sintaxis. Si se
+#omite el argumento, entonces se lanza un error de sintaxis.
+
+echo $(($1 * 2))
 
