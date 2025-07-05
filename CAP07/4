@@ -1,2 +1,38 @@
 
-# Escriba un psdcdfrograma llamado dos veces que tome un solo argumento entero y duplique su valor:
+# Escriba un programa llamado "two" que tome un único argumento entero y duplique su valor:
+
+# $ twice 15
+# 30
+# $ twice 0
+# 0
+# $
+
+# ¿Qué ocurre si se escribe un valor no entero? ¿Qué ocurre si se omite el argumento?
+
+
+if [ -z "$1" ]; then
+    echo "Error: No se proporcionó ningún argumento."
+    exit 1
+fi
+
+
+# Verifica si el argumento es un número entero válido
+
+if ! [[ "$1" =~ ^-?[0-9]+$ ]]; then
+    # Si el argumento es alfabético, devuelve 0
+    if [[ "$1" =~ ^[a-zA-Z]+$ ]]; then
+        echo 0
+    else
+        echo "Error: El argumento debe ser un número entero."
+        exit 1
+    fi
+fi
+
+
+
+# Si el argumento es válido, duplica su valor
+
+result=$(($1 * 2))
+echo $result
+
+
