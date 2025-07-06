@@ -1,0 +1,55 @@
+
+# Escribe un programa llamado collect que se ejecute en segundo plano y cuente el número de usuarios conectados al final de cada intervalo y también el número de procesos ejecutados durante ese intervalo. Permite que el intervalo se especifique con una opción -t (ver el ejercicio anterior), con un valor predeterminado de 10 minutos. Usa el hecho de que la variable especial del shell $! se establece con el número de proceso del último comando ejecutado en segundo plano y que
+#: &
+#ejecuta un comando nulo en segundo plano. Asegúrate también de que el programa maneje correctamente el caso en que el número de proceso regrese a 1 después de alcanzar el máximo.
+
+#Así que
+#collect -t 900 > stats &
+#debería iniciar collect para recopilar las estadísticas deseadas cada 15 minutos y escribirlas en el archivo stats.
+
+
+
+nterval=600
+
+# Mostrar ayuda si no se pasan argumentos
+if [ $# -eq 0 ]; then
+    echo "======================================"
+    echo " USO DEL PROGRAMA:"
+    echo " Este script recolecta estadísticas del sistema."
+    echo ""
+    echo " Ejecútalo de la siguiente manera:"
+    echo ""
+    echo "     ./5 -t 900 > stats &"
+    echo ""
+    echo " Donde:"
+    echo "     -t especifica el intervalo en segundos (ej: 900 = 15 minutos)"
+    echo "     > stats guarda la salida en un archivo llamado 'stats'"
+    echo "     & lo ejecuta en segundo plano"
+    echo "======================================"
+    exit 1
+fi
+
+# Procesar las opciones de línea de comandos
+while getopts t: option
+do
+    case "$option" in
+
+	t)  interval=$OPTARG;;
+
+	\?) echo "Uso: ./5 [-t n]"
+	    echo " -t significa verificar cada n segundos."
+	    exit 1;;
+    esac
+done
+
+# Bucle infinito; terminar manualmente
+while :
+do
+    echo "$(date)"
+    echo "$(ps | wc -l) procesos"
+    echo "$(who | wc -l) usuarios"
+    echo ""
+
+    sleep $interval
+done
+
