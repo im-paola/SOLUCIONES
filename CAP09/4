@@ -1,0 +1,104 @@
+
+# Agrega una opción -n a mon que invierta la función de monitoreo. Así:
+
+#mon -n sandy
+#verifica que sandy se desconecte del sistema, y
+
+#mon -n -f /tmp/dataout &
+#verifica periódicamente la eliminación del archivo especificado. 
+
+
+fileopt=FALSE
+mailopt=FALSE
+invert=FALSE
+
+interval=60
+filename=
+user=
+inv_pref=
+
+# Procesar las opciones de línea de comandos
+while getopts mnt:f: option
+do
+    case "$option" in
+	f)  fileopt=TRUE
+	    filename=$OPTARG;;
+
+	m)  mailopt=TRUE;;
+
+	n)  invert=TRUE
+	    inv_pref=!;;
+
+	t)  interval=$OPTARG;;
+
+	\?) echo "Uso: waitfor [-m] [-n] [-f archivo] [-t n] [usuario]"
+	    echo " -m significa ser informado por correo"
+	    echo " -f significa verificar si existe el archivo 'archivo'"
+	    echo " -t significa verificar cada n segundos"
+	    exit 1;;
+    esac
+done
+
+# Caso: waitfor busca a un usuario (en lugar de un archivo)
+if [ "$fileopt" = "FALSE" ]
+then
+    # Guardar el nombre del usuario en $user
+    if [ "$OPTIND" -gt "$#" ]
+    then
+	echo "¡Falta el nombre de usuario!"
+	exit 2
+    else
+	shiftcount=$((OPTIND - 1))
+	shift $shiftcount
+	user=$1
+    fi
+fi
+
+# Establecer $condition para (i) verificar si un usuario inicia sesión, o (ii) verificar si
+# existe un archivo con nombre $filename
+if [ "$fileopt" = FALSE ]
+then
+    condition='who | grep "^$user " > /dev/null'
+else
+    condition="[ -f $filename ]"
+fi
+
+# Dormir hasta que se cumpla la condición $condition
+until eval $inv_pref $condition
+do
+    sleep $interval
+done
+
+# Construir el mensaje $msg para enviar al usuario
+if [ "$fileopt" = FALSE ]
+then
+    # Obtener el número de terminal
+    tty=$(who | grep dpritch | sed 's/^[^[:space:]]* *\([^[:space:]]*\).*$/\1/')
+
+    if [ "$invert" = FALSE ]
+    then
+	msg="$user ha iniciado sesión en $tty"
+    else
+	msg="$user ha cerrado sesión en $tty"
+    fi
+else
+    if [ "$invert" = FALSE ]
+    then
+	msg="el archivo $filename existe"
+    else
+	msg="el archivo $filename no existe"
+    fi
+fi
+
+# Escribir el mensaje por pantalla o enviarlo por correo
+if [ "$mailopt" = FALSE ]
+then
+    echo $msg
+else
+    runner=$(who am i | cut -c1-8)
+    echo $msg | mail $runner
+fi
+
+
+
+
