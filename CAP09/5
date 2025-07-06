@@ -9,7 +9,7 @@
 
 
 
-nterval=600
+interval=600
 
 # Mostrar ayuda si no se pasan argumentos
 if [ $# -eq 0 ]; then
