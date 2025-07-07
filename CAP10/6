@@ -1,0 +1,184 @@
+
+# Modifica mycp para usar sed en lugar del bucle while para procesar los argumentos escritos en la línea de comandos.
+
+numargs=
+numfrom=-1
+filelist=
+copylist=
+missinglist=
+check_overwr=TRUE
+numargs=$#
+
+#
+# Procesar los argumentos, almacenando todos menos el último en filelist
+#
+
+while [ "$#" -gt 1 ]
+do
+    filelist="$filelist $1"
+    shift
+done
+
+#
+# Almacenar el archivo DESTINO en $to. Ten en cuenta que en el caso en que la única
+# opción proporcionada en la línea de comandos sea -n (es decir, no se proporcionen archivos),
+# entonces -n se almacenará erróneamente en $to. Esto está bien porque $to se sobrescribirá
+# más adelante.
+#
+
+to="$1"
+
+#
+# Verificar si existe la opción -n y, si se encuentra, eliminarla de $filelist, y almacenar
+# el número de argumentos restantes en $numargs. Ten en cuenta que incluimos $to en la
+# verificación con grep en el caso de que -n haya sido el único argumento en la línea de
+# comandos (y por lo tanto $filelist sea NULL y $to tenga el valor -n).
+#
+
+if echo "$filelist $to" | grep '^ *-n\b' > /dev/null
+then
+    filelist=$(printf "$filelist" | sed 's/^ *-n\b\(.*\)/\1/')
+    check_overwr=FALSE
+    numargs=$((numargs - 1))
+fi
+
+#
+# Si solo hay un argumento, o si hay más de dos y el último no es un directorio,
+# entonces mostrar un mensaje de error
+#
+
+if [ "$numargs" -eq 1 -o "$numargs" -gt 2 -a ! -d "$to" ]
+then
+    echo "Uso: mycp [-n] ORIGEN DESTINO"
+    echo "     mycp [-n] ORIGEN... DIRECTORIO"
+    exit 1
+fi
+
+#
+# Si no se proporcionan argumentos, solicitar al usuario que los ingrese
+#
+
+if [ "$numargs" -eq 0 ]
+then
+
+    # Leer archivos de origen
+    from=' '
+    while [ -n "$from" ]
+    do
+	printf 'ingrese archivo de origen (presione enter para terminar):  '
+	read from
+	filelist="$filelist $from"
+
+	# Eliminar espacios en blanco iniciales
+	from=$(printf "$from" | sed "s/^[ \t]*//")
+	# Incrementar contador de archivos de origen
+	: $((numfrom += 1))
+    done
+    
+    # Verificar que se haya proporcionado al menos un archivo de origen
+    if [ $numfrom -eq 0 ]
+    then
+	echo "error: se requiere especificar al menos un archivo de origen"
+	exit 1
+    fi
+
+    # Leer archivo de destino
+    printf 'ingrese archivo de destino:  '
+    read to
+    to=$(printf "$to" | sed "s/^[ \t]*//")
+    if [ ! -n $to ]
+    then
+	echo "error: argumento no válido para el archivo de destino"
+	exit 1
+    fi
+fi
+
+#
+# Recorrer cada archivo en filelist
+#
+
+for from in $filelist
+do
+
+    #
+    # Asegurarse de que $from exista
+    #
+
+    if [ ! -f "$from" ]
+    then
+	missinglist="$missinglist $from"
+	continue
+    fi
+
+    #
+    # Verificar si el archivo de destino es un directorio
+    #
+
+    if [ -d "$to" ]
+    then
+	tofile="$to/$(basename $from)"
+    else
+	tofile="$to"
+    fi
+
+    #
+    # Agregar el archivo a copylist si no existe ya o si el usuario aprueba
+    # sobrescribirlo
+    #
+
+    if [ $check_overwr = TRUE -a -e "$tofile" ]
+    then
+	printf "$tofile ya existe; ¿sobrescribir (yes/no)?  "
+	read answer
+
+	if [ "$answer" = yes ]
+	then
+	    copylist="$copylist $from"
+	fi
+    else
+	copylist="$copylist $from"
+    fi
+done
+
+#
+# Verificar si hay archivos faltantes; si los hay, solicitar al usuario si desea
+# continuar copiando los restantes
+#
+
+if [ ! -n missinglist ]
+then
+    echo "Los siguientes archivos no existen: $missinglist"
+    
+    if [ -n "$copylist" ]
+    then
+	printf "¿Se deben copiar los archivos restantes (yes/no)?  "
+	read answer
+
+	if [ ! "$answer" = yes ]
+	then
+	    echo "Archivos no copiados"
+	    exit 0
+	fi
+    else
+	echo "No hay archivos restantes para copiar"
+	exit 0
+    fi
+fi
+
+#
+# Ahora realizar la copia — primero asegúrate de que hay algo para copiar.
+# Esto es programación defensiva: una vez que estamos aquí, se garantiza
+# que copylist no esté vacío.
+#
+
+if [ -n "$copylist" ]
+then
+    cp $copylist $to
+    # proceder con la copia
+fi
+
+
+
+
+
+

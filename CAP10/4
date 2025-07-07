@@ -1,0 +1,167 @@
+
+# Modifica mycp para que solicite los argumentos si no se proporciona ninguno. Una ejecución típica de la versión modificada debería verse así:
+
+# $ mycp
+# Source file name? voucher
+# Destination file name? voucher.sv
+# $
+
+#Asegúrate de que el programa permita que uno o ambos archivos se especifiquen con caracteres de sustitución de nombre de archivo.
+
+numargs=$#  # guarda esto para usarlo más adelante
+numfrom=-1
+filelist=
+copylist=
+missinglist=
+
+#
+# Procesar los argumentos, almacenando todos menos el último en filelist
+#
+
+while [ "$#" -gt 1 ]
+do
+    filelist="$filelist $1"
+    shift
+done
+
+to="$1"
+
+#
+# Si solo hay un argumento, o si hay más de dos y el último argumento no es un directorio,
+# entonces mostrar un mensaje de error
+#
+
+if [ "$numargs" -eq 1 -o "$numargs" -gt 2 -a ! -d "$to" ]
+then
+    echo "Uso: mycp ORIGEN DESTINO"
+    echo "     mycp ORIGEN... DIRECTORIO"
+    exit 1
+fi
+
+#
+# Si no se proporcionan argumentos, solicitar al usuario que los ingrese
+#
+
+if [ "$numargs" -eq 0 ]
+then
+
+    # Leer archivos de origen
+    from=' '
+    while [ -n "$from" ]
+    do
+	printf 'ingrese archivo de origen (presione enter para terminar):  '
+	read from
+	filelist="$filelist $from"
+
+	# Eliminar espacios en blanco iniciales
+	from=$(printf "$from" | sed "s/^[ \t]*//")
+	# Incrementar el contador de archivos de origen
+	: $((numfrom += 1))
+    done
+    
+    # Verificar que se haya proporcionado al menos un archivo de origen
+    if [ $numfrom -eq 0 ]
+    then
+	echo "error: se requiere especificar al menos un archivo de origen"
+	exit 1
+    fi
+
+    # Leer archivo de destino
+    printf 'ingrese archivo de destino:  '
+    read to
+    to=$(printf "$to" | sed "s/^[ \t]*//")
+    if [ ! -n $to ]
+    then
+	echo "error: argumento no válido para el archivo de destino"
+	exit 1
+    fi
+fi
+
+#
+# Recorrer cada archivo en filelist
+#
+
+for from in $filelist
+do
+
+    #
+    # Asegurar que $from exista
+    #
+
+    if [ ! -f "$from" ]
+    then
+	missinglist="$missinglist $from"
+	continue
+    fi
+
+    #
+    # Verificar si el archivo de destino es un directorio
+    #
+
+    if [ -d "$to" ]
+    then
+	tofile="$to/$(basename $from)"
+    else
+	tofile="$to"
+    fi
+
+    #
+    # Agregar el archivo a copylist si no existe o si el usuario aprueba
+    # sobrescribir
+    #
+
+    if [ -e "$tofile" ]
+    then
+	printf "$tofile ya existe; ¿sobrescribir (yes/no)?  "
+	read answer
+
+	if [ "$answer" = yes ]
+	then
+	    copylist="$copylist $from"
+	fi
+    else
+	copylist="$copylist $from"
+    fi
+done
+
+#
+# Verificar si hay archivos faltantes; si los hay, preguntar al usuario si desea
+# continuar copiando los restantes
+#
+
+if [ -n "$missinglist" ]
+then
+    echo "Los siguientes archivos no existen: $missinglist"
+
+    if [ -n "$copylist" ]
+    then
+	printf "¿Se deben copiar los archivos restantes (yes/no)?  "
+	read answer
+
+	if [ ! "$answer" = yes ]
+	then
+	    echo "Archivos no copiados"
+	    exit 0
+	fi
+    else
+	echo "No hay archivos restantes para copiar"
+	exit 0
+    fi
+fi
+
+#
+# Ahora realiza la copia — primero asegúrate de que hay algo para copiar.
+# Esto es programación defensiva: una vez que estamos aquí, se garantiza
+# que copylist no esté vacío.
+#
+
+if [ -n "$copylist" ]
+then
+    cp $copylist $to
+    # proceder con la copia
+fi
+
+
+
+
+
