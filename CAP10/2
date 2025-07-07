@@ -1,0 +1,102 @@
+
+#¿Qué sucede con mycp si uno o más de los archivos a copiar no existen? ¿Puedes hacer alguna sugerencia para manejar mejor la situación?
+
+
+numargs=$#                       # guarda esto para usarlo más adelante
+filelist=
+copylist=
+missinglist=
+
+#
+# Procesa los argumentos, almacenando todos menos el último en filelist
+#
+while [ "$#" -gt 1 ]
+do
+    filelist="$filelist $1"
+    shift
+done
+
+to="$1"
+
+#
+# Si hay menos de dos argumentos, o si hay más de dos y el último argumento
+# no es un directorio, entonces muestra un mensaje de error
+#
+if [ "$numargs" -lt 2 -o "$numargs" -gt 2 -a ! -d "$to" ]
+then
+    echo "Uso: mycp archivo1 archivo2"
+    echo "     mycp archivo(s) directorio"
+    exit 1
+fi
+
+#
+# Recorre cada archivo en filelist
+#
+for from in $filelist
+do
+    #
+    # Verifica que $from exista
+    #
+    if [ ! -f "$from" ]
+    then
+        missinglist="$missinglist $from"
+        continue
+    fi
+
+    #
+    # Verifica si el archivo destino es un directorio
+    #
+    if [ -d "$to" ]
+    then
+        tofile="$to/$(basename $from)"
+    else
+        tofile="$to"
+    fi
+
+    #
+    # Agrega el archivo a copylist si no existe o si el usuario dice que está bien sobrescribirlo
+    #
+    if [ -e "$tofile" ]
+    then
+        printf "$tofile ya existe; ¿sobrescribir (yes/no)? "
+        read answer
+        if [ "$answer" = yes ]
+        then
+            copylist="$copylist $from"
+        fi
+    else
+        copylist="$copylist $from"
+    fi
+done
+
+#
+# Verifica si hay archivos faltantes; si los hay, pregunta al usuario si desea continuar
+# copiando los restantes
+#
+if [ -n "$missinglist" ]
+then
+    echo "Los siguientes archivos no existen: $missinglist"
+    if [ -n "$copylist" ]
+    then
+        printf "¿Se deben copiar los archivos restantes (yes/no)? "
+        read answer
+        if [ ! "$answer" = yes ]
+        then
+            echo "Archivos no copiados"
+            exit 0
+        fi
+    else
+        echo "No hay archivos restantes para copiar"
+        exit 0
+    fi
+fi
+
+#
+# Ahora realiza la copia — primero asegúrate de que hay algo para copiar. Esto es
+# programación defensiva: una vez aquí, se asegura que copylist no esté vacío.
+#
+if [ -n "$copylist" ]
+then
+    cp $copylist $to             # procede con la copia
+fi
+
