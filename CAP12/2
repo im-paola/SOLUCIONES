@@ -1,0 +1,32 @@
+
+#Reescribe el programa home del Ejercicio 5 del Capítulo 7 para usar el comando set y la variable IFS para extraer el directorio home desde /etc/passwd. ¿Qué le sucede al programa si uno de los campos en el archivo es nulo, como en:
+
+# steve:*:203:100::/users/steve:/usr/bin/ksh
+
+#Aquí el quinto campo es nulo (::).
+
+# Verificar que se haya proporcionado exactamente 1 argumento
+if [ $# -ne 1 ]
+then
+    echo "uso: home nombre_de_usuario"
+    exit 1
+fi
+
+# Buscar en cada línea de /etc/passwd una coincidencia con el nombre proporcionado y verificar
+# que haya exactamente 1 coincidencia
+userline="$(grep "$1" /etc/passwd)"
+if [ $? -ne 0 ]
+then
+    echo "no hay coincidencia para el usuario $1"
+    exit 1
+elif [ $(echo "$userline" | wc -l) -gt 1 ]
+then
+    echo "múltiples coincidencias para el usuario $1"
+    exit 1
+fi
+
+# Extraer el sexto campo de una línea con formato de valores separados por dos puntos
+IFS=':'
+set $userline
+echo "$6"
+
