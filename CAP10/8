@@ -1,0 +1,69 @@
+
+# Modifica rolo para que el menú se vuelva a mostrar después de que se haga y procese cada selección. Para permitir que el usuario salga, agrega otra opción al menú para salir del programa.
+
+#
+# Si se proporcionan argumentos, entonces hacer una búsqueda
+#
+
+if [ "$#" -ne 0 ]
+then
+    ./lu "$@"
+    exit
+fi
+
+exitbool=FALSE
+
+#
+# Bucle hasta que el usuario salga del programa
+#
+
+until [ "$exitbool" = TRUE ]
+do
+
+    #
+    # Mostrar menú
+    #
+
+    printf '
+------------------
+¿Le gustaría:
+------------------
+0. Salir del programa
+1. Buscar a alguien
+2. Agregar a alguien a la guía telefónica
+3. Eliminar a alguien de la guía telefónica
+Por favor seleccione una de las opciones anteriores (0-3): '
+
+    #
+    # Leer y procesar la selección
+    #
+
+    read choice
+    echo
+
+    case "$choice"
+	in
+
+	0) exitbool=TRUE;;
+
+	1) printf "Ingrese el nombre a buscar: "
+	    read name
+	    ./lu "$name";;
+
+	2) printf "Ingrese el nombre a agregar: "
+	    read name
+	    printf "Ingrese el número: "
+	    read number
+	    ./add "$name" "$number";;
+
+	3) printf "Ingrese el nombre a eliminar: "
+	    read name
+	    ./rem "$name";;
+
+	*) echo "Opción inválida";;
+
+    esac
+done
+
+
+

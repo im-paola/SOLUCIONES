@@ -1,0 +1,63 @@
+
+# Eliminar a alguien de la guía telefónica
+#
+
+if [ "$#" -ne 1 ]
+then
+    echo "Número incorrecto de argumentos."
+    echo "Uso: rem nombre"
+    exit 1
+fi
+
+name=$1
+
+#
+# Encontrar el número de entradas que coinciden
+#
+
+match_names=$(grep "$name" phonebook)
+# Se necesita una condición porque echo "$match_names" | wc -l no funciona correctamente
+# para la cadena vacía
+if [ -n "$match_names" ]
+then
+    matches=$(echo "$match_names" | wc -l)
+else
+    matches=0
+fi
+
+#
+# Si hay más de una coincidencia, solicitar confirmación al usuario para eliminar,
+# de lo contrario eliminar directamente
+#
+
+if [ "$matches" -gt 1 ]
+then
+
+    echo "Se encontró más de una coincidencia; por favor seleccione cuál eliminar"
+
+    # Cada iteración solicita confirmación para eliminar la entrada de la guía telefónica
+    # correspondiente a la entrada encontrada en la primera línea de $matches; luego se
+    # elimina la primera línea de $matches
+    while [ $matches -ge 1 ]
+    do
+	# Preguntar al usuario si desea eliminar la entrada
+	this_name=$(echo "$match_names" | head -1)
+	printf "$this_name	¿Eliminar (y/n)? "
+	read rem_choice
+	if [ "_$rem_choice" = _y ]
+	then
+	    ./rem "$this_name"
+	fi
+
+	# Eliminar la primera entrada
+	matches=$((matches - 1))
+	match_names=$(echo "$match_names" | tail -$matches)
+    done
+elif [ "$matches" -eq 1 ]
+then
+    grep -v "$name" phonebook > /tmp/phonebook$$
+    mv /tmp/phonebook$$ phonebook
+else
+    echo "No pude encontrar a $name en la guía telefónica"
+fi
+
