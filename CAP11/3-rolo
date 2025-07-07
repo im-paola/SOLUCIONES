@@ -1,0 +1,92 @@
+
+# Modifica rolo de este capítulo para que una persona que ejecute el programa pueda guardar su archivo de agenda telefónica en cualquier directorio y no solo en el directorio personal (home). Esto se puede lograr exigiendo que el usuario establezca una variable exportada llamada PHONEBOOK con el nombre del archivo de la agenda antes de ejecutar rolo. Verifica que esta variable esté establecida con un archivo válido. Si la variable no está establecida, haz que el programa asuma que el archivo de la agenda está en el directorio personal del usuario como antes.
+
+#Aquí hay algunos ejemplos:
+
+#$ PHONEBOOK=/users/steve/personal lu Gregory
+#Gregory        973-555-0370
+#$ PHONEBOOK=/users/pat/phonebook lu Toritos
+#El Toritos     973-555-2236
+#$
+
+#En el ejemplo anterior, se asume que el usuario steve ha recibido acceso de lectura al archivo de agenda telefónica de pat.
+
+#
+# Verifica que $PHONEBOOK sea el nombre de un archivo válido
+#
+
+. ./set_phb_loc
+
+#
+# Establecer $PHB_STANDALONE con un valor no nulo indica a add, lu y rem que
+# no necesitan verificar la validez del archivo especificado por $PHONEBOOK durante
+# el uso de rolo
+#
+
+PHB_STANDALONE=FALSE
+export PHB_STANDALONE
+
+#
+# Si se proporcionan argumentos, entonces realiza una búsqueda
+#
+
+if [ "$#" -ne 0 ]
+then
+    ./lu "$@"
+    exit
+fi
+
+#
+# Bucle hasta que el usuario salga del programa
+#
+
+exitbool=FALSE
+until [ "$exitbool" = TRUE ]
+do
+
+    #
+    # Mostrar menú
+    #
+
+    printf '
+------------------
+¿Qué te gustaría hacer?
+------------------
+0. Salir del programa
+1. Buscar a alguien
+2. Agregar a alguien a la agenda telefónica
+3. Eliminar a alguien de la agenda telefónica
+Por favor selecciona una de las opciones anteriores (0-3): '
+
+    #
+    # Leer y procesar la selección
+    #
+
+    read choice
+    echo
+
+    case "$choice" in
+
+	0) exitbool=TRUE;;
+
+	1) printf "Introduce el nombre a buscar: "
+	    read name
+	    ./lu "$name";;
+
+	2) printf "Introduce el nombre a agregar: "
+	    read name
+	    printf "Introduce el número: "
+	    read number
+	    ./add "$name" "$number";;
+
+	3) printf "Introduce el nombre a eliminar: "
+	    read name
+	    ./rem "$name";;
+
+	*) echo "Opción incorrecta";;
+
+    esac
+done
+
+
+

@@ -1,0 +1,92 @@
+
+name=$1
+maxlen=0
+
+#
+# Verifica que $PHONEBOOK sea el nombre de un archivo válido
+#
+
+if [ ! -n "$PHB_STANDALONE" ]
+then
+    . 11-3_rolo
+fi
+
+#
+# Encuentra el número de entradas coincidentes
+#
+
+match_text=$(grep "$name" "$PHONEBOOK")
+match_text_local=$match_text
+if [ ! -n "$match_text_local" ]
+then
+    # Nada que imprimir
+    exit 0
+fi
+
+n_matches=$(echo "$match_text_local" | wc -l)
+n_matches_local=$n_matches
+
+#
+# Encuentra la longitud máxima del nombre
+# 
+
+# Cada iteración encuentra la longitud del nombre en la primera línea de
+# $match_text_local y la compara con la longitud máxima del nombre y actualiza el máximo
+# si es necesario; luego se elimina la primera línea de $match_text_local
+while [ $n_matches_local -ge 1 ]
+do
+    # Obtener la longitud del nombre actual
+    this_line=$(echo "$match_text_local" | head -1)
+    this_len=$(echo "$this_line" | cut -f1 | wc -m)
+    this_len=$(($this_len - 1))
+
+    # Encontrar la longitud máxima actual
+    if [ $this_len -gt $maxlen ]
+    then
+	maxlen=$this_len
+    fi
+
+    # La longitud máxima permitida es 40; salir si se alcanza
+    if [ $maxlen -ge 40 ]
+    then
+	maxlen=40
+	break
+    fi
+
+    # Eliminar la primera entrada
+    n_matches_local=$((n_matches_local - 1))
+    match_text_local=$(echo "$match_text_local" | tail -$n_matches_local)
+done
+
+#
+# Imprime cada línea formateada de coincidencias del directorio telefónico
+#
+
+# Restablecer $match_text_local y $n_matches_local
+match_text_local=$match_text
+n_matches_local=$n_matches
+    
+# 
+while [ $n_matches_local -ge 1 ]
+do
+    # Obtener longitud del nombre actual
+    this_line=$(echo "$match_text_local" | head -1)
+    this_name=$(echo "$this_line" | cut -f1)
+    this_number=$(echo "$this_line" | cut -f2)
+
+    # Asegurar que el nombre no exceda los 40 caracteres
+    this_len=$(echo "$this_name" | wc -m)
+    this_len=$((this_len - 1))
+    if [ $this_len -gt 40 ]
+    then
+	this_name="$(echo "$this_name" | cut -c1-37)..."
+    fi
+
+    # Imprime la línea con relleno de espacios
+    printf "%-*s    %s\n" $maxlen "$this_name" "$this_number"
+
+    # Eliminar la primera entrada
+    n_matches_local=$((n_matches_local - 1))
+    match_text_local=$(echo "$match_text_local" | tail -$n_matches_local)
+done
+
