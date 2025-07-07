@@ -1,0 +1,105 @@
+
+# Modifica wgrep para que acepte un número variable de nombres de archivos como argumentos. Precede cada línea de salida con el nombre del archivo en el que ocurre la coincidencia (como lo hace grep).
+
+# Determina el tamaño de la ventana $winsize; el valor predeterminado es 1
+winsize=1
+while getopts w: option
+do
+    case "$option" in
+
+	w)  winsize=$OPTARG
+	    # Asegura que se pase un argumento entero a -w
+	    case $winsize in
+
+		# Verifica si el valor está vacío o si no es un dígito
+		''|*[!0-9]*) 
+		    echo "argumento no entero para -w"
+		    exit 1;;
+
+		*)
+		    # sin operación
+		    :;;
+	    esac;;
+
+	\?) echo '¡opción no válida!'
+	    echo 'uso: wgrep [-w winsize] patrón archivo...'
+	    exit 1;;
+    esac
+done
+
+# Verifica que se haya proporcionado al menos un argumento para el patrón y el nombre del archivo
+if [ "$OPTIND" -ge "$#" ]
+then
+    echo "¡falta el nombre del archivo o el patrón!"
+    echo 'uso: wgrep [-w winsize] patrón archivo...'
+    exit 2
+fi
+
+# Si es necesario, mueve la posición del argumento después de -w winsize; guarda el patrón en
+# $pattern; mueve la posición del argumento al primer nombre de archivo
+shiftcount=$((OPTIND - 1))
+shift $shiftcount
+pattern=$1
+shift 1
+
+# Verifica que los argumentos de nombre de archivo sean válidos
+for filename in "$@"
+do
+    if ! [ -f $filename ]
+    then
+	echo "archivo $filename no encontrado"
+	exit 1
+    fi
+done
+
+# Cada iteración del bucle imprime la ventana alrededor de cada coincidencia del patrón encontrada
+# para un argumento dado de nombre de archivo
+for filename in "$@"
+do
+    # Número de líneas en el archivo
+    filelen=$(wc -l "$filename" | cut -d ' ' -f1)
+
+    # Obtiene los números de línea en los que se encuentran coincidencias
+    matches=$(grep -n "$pattern" "$filename" | cut -d ':' -f1)
+    if [ ! -n "$matches" ]
+    then
+	continue
+    fi
+
+    # Imprime el encabezado del archivo
+    echo "==================== inicio del archivo $filename"
+    echo ""
+
+    # Cada iteración del bucle imprime la línea anterior a $linum, la línea en sí
+    # y la línea posterior. Esto se logra en cada iteración usando head para limitar
+    # los datos a las primeras $linum + 1 líneas, y luego usando tail para extraer
+    # las últimas 3 líneas. Ten en cuenta que las coincidencias en líneas consecutivas
+    # resultarán en datos superpuestos.
+    for linum in $matches
+    do
+	# Si se encuentra una coincidencia cerca del final del archivo, es posible que necesitemos ajustar
+	# el parámetro dado a tail en consecuencia
+	n_diff=$(($filelen - $linum))
+	if [ $winsize -le $n_diff ]
+	then
+	    taillen=$((2 * $winsize + 1))
+	else
+	    taillen=$(($winsize + 1 + $n_diff))
+	fi
+
+	echo '<-- inicio -->'
+	head -$(($linum + $winsize)) $filename | tail -$taillen
+	echo '<--  fin  -->'
+	echo ''
+    done
+
+    # Imprime el pie del archivo
+    echo "==================== fin del archivo $filename"
+    echo ""
+    echo ""
+
+done # fin del bucle que imprime coincidencias en el archivo
+
+
+
+
