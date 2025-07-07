@@ -1,0 +1,28 @@
+
+# Dadas las siguientes asignaciones de variables:
+#$ EDITOR=/bin/vi
+#$ DB=
+#$ EDITFLAG=yes
+#$ PHONEBOOK=
+#$
+
+#¿Cuáles serán los resultados de los siguientes comandos?
+#echo ${EDITOR}                    echo ${DB:=/users/pat/db}
+#echo ${EDITOR:-/bin/ed}           echo ${PHONEBOOK:?}
+#echo ${DB:-/users/pat/db}         ed=${EDITFLAG:+${EDITOR:-/bin/ed}}
+
+#RESPUESTAS: 
+
+#a. /bin/vi
+
+#b. /bin/vi
+
+#c. /users/pat/db
+
+#d. /users/pat/db
+
+#e. bash: PHONEBOOK: parameter null or not set
+
+#f. $  or null (empty)
+
+
