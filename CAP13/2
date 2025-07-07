@@ -1,0 +1,70 @@
+
+#Modifica el programa shar presentado en este capítulo para que maneje directorios. shar debe reconocer archivos de entrada provenientes de diferentes directorios y debe asegurarse de que los directorios sean creados si es necesario cuando se desempaqueta el archivo. También permite que shar se utilice para archivar un directorio completo.
+
+#$ ls rolo
+#lu
+#add
+#rem
+#rolo
+#$ shar rolo/lu rolo/add rolo/rem > rolosubs.shar
+#$ shar rolo > rolo.shar
+#En el primer caso, shar fue utilizado para archivar tres archivos del directorio rolo. En el último caso, shar fue utilizado para archivar el directorio completo rolo.
+
+
+# Asegurarse de que cada archivo exista
+for file
+do
+    if [ ! -e "$file" ]
+    then
+	echo "error: archivo $file no encontrado" >&2
+	exit 1
+    fi
+done
+
+echo '#!/bin/bash'
+echo
+echo '# ``````````````````````````` #'
+echo '# Para restaurar, escribe sh archive #'
+echo '# ........................... #'
+echo
+
+for file
+do
+    if [ -d "$file" ]
+    then
+	cat <<-THE-END-OF-DATA
+	
+	if [ ! -d "$file" ]
+	then
+	    mkdir "$file"
+	fi
+	
+	THE-END-OF-DATA
+
+	# caso: subdirectorio no vacío. Llamar recursivamente al programa con
+	# los archivos del subdirectorio
+	if [ -n "$(ls -A "$file")" ]
+	then
+	    ./exer02.sh "$file"/*
+	fi
+    else
+	
+	cat <<-THE-END-OF-DATA
+	
+	# caso: el archivo está en un subdirectorio. Verificar si el subdirectorio
+	# necesita ser creado
+	if [ "${file%/*}" != "$file" ]
+	then
+	    mkdir -p "${file%/*}"
+	fi
+	
+	THE-END-OF-DATA
+
+	echo
+	echo "echo Extrayendo $file"
+	echo "cat > $file <<\THE-END-OF-DATA"
+	cat $file
+	echo "THE-END-OF-DATA"
+    fi
+done
+

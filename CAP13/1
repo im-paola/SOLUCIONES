@@ -1,0 +1,21 @@
+
+#Usando eval, escribe un programa llamado recho que imprima sus argumentos en orden inverso. Entonces:
+
+#recho one two three
+debería producir:
+
+#three two one
+#Asume que se pueden pasar más de nueve argumentos al programa.
+
+k=$#
+
+while [ $k -ge 1 ]
+do
+    # Nota que un conjunto de comillas está escapado para que permanezcan
+    # alrededor y encierren la cadena en la segunda evaluación
+    eval printf "\"[\${$k}]    \""
+    k=$((k - 1))
+done
+
+echo
+
