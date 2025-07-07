@@ -1,0 +1,18 @@
+
+#Escribe una función de shell llamada octal que convierta números octales dados como argumentos de línea de comandos a números decimales y los imprima, uno por línea:
+
+# $ octal 10 11 12
+# 8
+# 9
+# 10
+# $
+
+#(Pista para usuarios de Korn shell: Si asignas un número decimal a una variable cuando la declaras —por ejemplo, typeset –i d=10##0— las asignaciones a esta variable desde otras bases se convierten primero a decimal.)
+
+octal() {
+    for num in "$@"
+    do
+        # Usa base 8 para interpretar el número
+        echo $((8#$num))
+    done
+}

@@ -1,0 +1,153 @@
+
+# (Sólo para usuarios de Bash) Añade la función old new de cd del Korn shell a la función cdh.
+
+CDHIST[0]=$PWD
+
+# Toma un patrón como $1 y trata de hacer coincidirlo usando grep contra los elementos en
+# $CDHIST. Si se encuentra exactamente 1 coincidencia, entonces cd a ese directorio,
+# de lo contrario retorna 1.
+
+cd_by_pattern () {
+
+    typeset match_idx dir_pattern="${1#-}"
+    typeset -i i cdlen=${#CDHIST[*]}
+
+    # Recorre $CDHIST y verifica cada directorio para una coincidencia con
+    # $dir_pattern. Cada vez que se encuentre una coincidencia, agrega el número de índice a
+    # $match_idx.
+    ((i = 0))
+    while ((i < cdlen))
+    do
+	if grep "$dir_pattern" <<< "${CDHIST[i]}" > /dev/null
+	then
+	    match_idx=$(echo "$match_idx $i")
+	fi
+	((i = i + 1))
+    done
+    
+    # Establece los parámetros posicionales a los índices de las coincidencias
+    set -- $match_idx
+
+    # Cambia de directorio si se encuentra exactamente 1 coincidencia, lanza error en caso contrario
+    if [ $# -eq 0 ]
+    then
+	# caso: no se encontraron coincidencias; retorna 1
+	echo "error: no se encontraron coincidencias para $dir_pattern" >&2
+	return 1
+    elif [ $# -ge 2 ]
+    then
+	# caso: múltiples coincidencias encontradas; imprime cada coincidencia y retorna 1
+	echo "error: se encontraron múltiples coincidencias para $dir_pattern" >&2
+	for idx
+	do
+	    echo "${CDHIST[idx]}"
+	done
+	return 1
+    else
+	# caso: exactamente 1 coincidencia encontrada; cd a ella
+	cd "${CDHIST[match_idx]}"
+	return 0
+    fi
+    
+}
+
+# Toma la primera coincidencia de $1 contra $PWD y reemplázala con $2 usando sed.
+# Si existe tal coincidencia, intenta hacer cd a ese directorio, si no retorna 1.
+
+korn_subst () {
+
+    typeset old="$1"
+    typeset new="$2"
+
+    new_path=$(sed "s/$old/$new/" <<< "$PWD")
+    if [ "$new_path" = "$PWD" ]
+    then
+	echo "error: cadena $old no coincidió contra $PWD" >&2
+	return 1
+    fi
+
+    cdh "$new_path"
+}
+
+# uso:
+#
+#     cdh -l          <-- muestra el historial numerado de directorios
+#     cdh path        <-- cd a path
+#     cdh -n          <-- cd al n-ésimo path en el historial de directorios
+#     cdh -pattern    <-- cd al path en el historial que coincide con pattern, usando
+#                         grep
+#     cdh old new     <-- cd al path obtenido reemplazando la primera coincidencia 
+#                         de old en PWD con new, usando sed
+
+cdh ()  {
+
+    typeset -i cdlen i 
+    typeset match_idx
+
+    if [ $# -eq 0 ]                     # por defecto a HOME sin argumentos
+    then
+	set -- $HOME
+    elif [ $# -eq 2 ]                   # emula sustitución parcial del Korn shell
+    then
+	korn_subst $@
+	return
+    fi
+
+    cdlen=${#CDHIST[*]}                 # número de elementos en CDHIST
+
+    # Nota que hay cinco casos de 'cd' correspondientes a cualquier entrada que no sea un guion
+    # seguido de una secuencia de enteros: (i) cadena vacía, (ii) cualquier caso que
+    # tenga un carácter no entero o guion, (iii) cualquier guion que sigue a un entero,
+    # (iv) cualquier entero que no sigue a un guion, y (v) un guion simple.
+    case "$@" in
+
+	-l)                             # imprime lista de directorios
+	    i=0
+	    while ((i < cdlen))
+	    do
+		printf "%3d %s\n" $i "${CDHIST[i]}"
+		((i = i + 1))
+	    done
+	    return ;;
+
+	''|*[!-0-9]*|*[0-9]-*|[0-9]*|-) # cd por path o coincidencia de patrón
+
+	    case "$@" in
+		-?*)                    # cd a nuevo dir
+		    cd_by_pattern "$@" 
+		    return ;;
+
+		*)                      # intenta hacer match con patrón en historial
+		    cd "$@" ;;
+
+	    esac ;;
+
+	*)                              # cd a dir en lista
+            # eliminar guion inicial
+	    i=${1#-}
+	    if [ $i -lt $cdlen ]
+	    then
+		cd "${CDHIST[i]}" 
+	    else
+		echo "error: índice $i fuera de rango" >&2
+	    fi ;;
+
+    esac
+
+    # Si el directorio ya está en el historial, podemos salir sin volver a poner
+    # el directorio en el historial. El límite superior es debido al caso -n
+    # que sólo maneja dígitos 0-99
+    ((i = cdlen - 1))
+    while ((0 <= i))
+    do
+	if [ "$PWD" = "${CDHIST[i]}" ]
+	then
+	    return 
+	fi
+	((i = i - 1))
+    done
+
+    # Si hemos llegado aquí, el directorio aún no está en el historial; colócalo allí
+    CDHIST[cdlen]="$PWD"
+}
+

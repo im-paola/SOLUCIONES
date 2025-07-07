@@ -1,0 +1,65 @@
+
+# Usando solo comandos internos de shell, escribe una función que imprima todos los nombres de archivo
+# en una jerarquía de directorios especificada. Su salida debe ser similar a la salida
+# del comando find:
+#
+#     $ myfind /users/pat
+#     /users/pat
+#     /users/pat/bin
+#     /users/pat/bin/ksh
+#     /users/pat/bin/lf
+#     /users/pat/bin/pic
+#     /users/pat/chapt1
+#     /users/pat/chapt1/intro
+#     /users/pat/rje
+#     /users/pat/rje/file1
+
+
+# imprime "nonempty" si $path es un directorio no vacío, imprime "empty" de lo contrario (incluso
+# si $path no es un nombre de archivo válido).
+#
+# NOTA: se ignoran los archivos que comienzan con punto.
+# NOTA: "$(ls -A "$path")" sería más fácil si se permitiera usar ls
+
+is_empty () {
+    typeset filenames=$(echo "$path"/*)
+    # Nota: la segunda prueba detecta el caso especial cuando el único archivo en el
+    # directorio tiene el nombre *
+    if [ "$filenames" = "$path/*" -a ! -e "$path/*" ]
+    then
+	echo "empty"
+    else
+	echo "nonempty"
+    fi
+}
+
+
+# Itera a través de las rutas en "$@" y escribe cada una en stdout. Si la
+# ruta es en realidad un subdirectorio no vacío, llama recursivamente a la función con
+# los archivos del subdirectorio.
+#
+# NOTA: se ignoran los archivos que comienzan con punto
+
+write_pathnames () {
+
+    for path
+    do
+	if [ ! -e "$path" ]
+	then
+	    echo "error: $path no existe" >&2
+	    exit
+	fi
+
+	echo "$path"
+	# if [ -d "$path" ]
+	if [ -d "$path" -a $(is_empty) = "nonempty" ]
+	then
+	    write_pathnames "$path"/*
+	fi
+    done
+}
+
+
+# llamar a la función
+write_pathnames "$@"
+

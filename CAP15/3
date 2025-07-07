@@ -1,0 +1,76 @@
+
+#Modifica la función cdh para filtrar múltiples ocurrencias del mismo directorio; por ejemplo:
+
+#$ cdh –l
+#  0 /users/pat
+# $ cdh
+# $ cdh
+# $ cdh –l
+#  0 /users/pat
+# $
+
+CDHIST[0]=$PWD
+
+
+# uso:
+#
+#     cdh -l          <-- mostrar historial de directorios numerado
+#     cdh path        <-- cambiar al directorio path
+#     cdh -n          <-- cambiar al directorio n-ésimo en el historial
+
+cdh ()  {
+
+    typeset -i cdlen i
+
+    if [ $# -eq 0 ]                     # por defecto ir a HOME si no hay argumentos
+    then
+	set -- $HOME
+    fi
+
+    cdlen=${#CDHIST[*]}                 # número de elementos en CDHIST
+
+    # Nota que hay cinco casos de 'cd' correspondientes a cualquier entrada que no sea un guion
+    # seguido de una secuencia de enteros: (i) cadena vacía, (ii) cualquier caso que
+    # tenga un carácter no numérico o un guion en él, (iii) cualquier guion que siga a un entero,
+    # (iv) cualquier entero que no siga a un guion, y (v) un guion simple.
+    case "$@" in
+
+	-l)                             # imprimir lista de directorios
+	    i=0
+	    while ((i < cdlen))
+	    do
+		printf "%3d %s\n" $i "${CDHIST[i]}"
+		((i = i + 1))
+	    done
+	    return ;;
+
+	''|*[!-0-9]*|*[0-9]-*|[0-9]*|-) # cambiar a nuevo directorio
+	    cd "$@" ;;
+
+	*)                              # cambiar a directorio en la lista
+            # eliminar guion inicial '-'
+	    i=${1#-}
+	    if [ $i -lt $cdlen ]
+	    then
+		cd "${CDHIST[i]}" 
+	    else
+		echo "error: índice $i fuera de rango" >&2
+	    fi ;;
+    esac
+
+    # Si el directorio ya está en el historial, salimos sin agregarlo nuevamente.
+    # El límite superior es porque el caso -n sólo maneja dígitos del 0 al 99
+    ((i = cdlen - 1))
+    while ((0 <= i))
+    do
+	if [ "$PWD" = "${CDHIST[i]}" ]
+	then
+	    return 
+	fi
+	((i = i - 1))
+    done
+
+    # Si llegamos aquí, el directorio no está en el historial; agregarlo
+    CDHIST[cdlen]="$PWD"
+}
+
