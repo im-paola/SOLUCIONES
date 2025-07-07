@@ -1,0 +1,61 @@
+
+#
+# Cambiar una entrada en la guía telefónica
+#
+
+name=$1
+
+#
+# Obtener entradas coincidentes y guardarlas en un archivo temporal
+#
+
+grep "$name" $PHONEBOOK > /tmp/matches$$
+if [ ! -s /tmp/matches$$ ]
+then
+    echo "No puedo encontrar a $name en la guía telefónica"
+    exit 1
+fi
+
+#
+# Mostrar las entradas coincidentes una por una y confirmar el cambio
+#
+
+while read line
+do
+    ./display "$line"
+    printf "¿Cambiar esta entrada (s/n)? "
+    read answer < /dev/tty
+
+    if [ "$answer" = y ]
+    then
+	break
+    fi
+done < /tmp/matches$$
+
+rm /tmp/matches$$
+
+if [ "$answer" != y ]
+then
+    exit
+fi
+
+#
+# Iniciar el editor en la entrada confirmada
+#
+
+printf "$line" | tr '^' '\012' > /tmp/ed$$
+echo "Introduce los cambios con ${EDITOR:=/bin/ed}"
+trap "" 2  # no abortar si se presiona DELETE mientras se edita
+$EDITOR /tmp/ed$$
+
+#
+# Eliminar la entrada anterior y agregar la nueva
+#
+
+grep -v "^$line$" $PHONEBOOK > /tmp/phonebook$$
+{ tr '\012' '^' < /tmp/ed$$; echo; } >> /tmp/phonebook$$
+# el último echo fue para volver a poner el salto de línea eliminado por tr
+
+sort /tmp/phonebook$$ -o $PHONEBOOK
+rm /tmp/ed$$ /tmp/phonebook$$
+

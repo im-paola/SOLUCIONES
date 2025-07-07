@@ -1,0 +1,28 @@
+
+#
+# Buscar a alguien en la guía telefónica
+#
+
+for name
+do
+
+    grep -i "$name" $PHONEBOOK > /tmp/matches$$
+
+    if [ ! -s /tmp/matches$$ ]
+    then
+	echo "No puedo encontrar a $name en la guía telefónica"
+    else
+
+	#
+	# Mostrar cada una de las entradas coincidentes
+	#
+
+	while read line
+	do
+	    ./display "$line"
+	done < /tmp/matches$$
+    fi
+done
+
+rm /tmp/matches$$
+

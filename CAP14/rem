@@ -1,0 +1,47 @@
+
+#
+# Eliminar a alguien de la guía telefónica
+#
+
+name=$1
+
+#
+# Obtener entradas coincidentes y guardarlas en un archivo temporal
+#
+
+grep "$name" $PHONEBOOK > /tmp/matches$$
+if [ ! -s /tmp/matches$$ ]
+then
+    echo "No puedo encontrar a $name en la guía telefónica"
+    exit 1
+fi
+
+#
+# Mostrar las entradas coincidentes una por una y confirmar eliminación
+#
+
+while read line
+do
+    ./display "$line"
+    printf "¿Eliminar esta entrada (s/n)? "
+    read answer < /dev/tty
+
+    if [ "$answer" = y ]
+    then
+	break
+    fi
+done < /tmp/matches$$
+
+rm /tmp/matches$$
+
+if [ "$answer" = y ]
+then
+    if grep -v "^$line$" $PHONEBOOK > /tmp/phonebook$$
+    then
+	mv /tmp/phonebook$$ $PHONEBOOK
+	echo "La entrada seleccionada ha sido eliminada"
+    else
+	echo "La entrada no fue eliminada"
+    fi
+fi
+
