@@ -1,0 +1,54 @@
+# Validador de IP, Teléfono (+507) y MAC Address
+# Basado en el estilo del script 'rolo' proporcionado
+
+clear
+
+if [ "$#" -ne 0 ]
+then
+     echo "Este script no acepta argumentos directamente."
+     exit
+fi
+
+validchoice=""
+
+# Bucle hasta que una selección válida se escoja
+until [ ! -z "$validchoice" ]
+do
+    #
+    # Despliega el Menu
+    #
+    echo -n "
+    Ingresa la opcion a validar:
+
+           1. Dirección I.P
+           2. Número de Teléfono (+507)
+           3. Dirección MAC
+           4. Salir
+    Seleccione (1-4):   "
+
+    read choice
+    echo
+
+    case "$choice" in
+        1) echo -n "Ingresar la IP a validar: "
+           read ip
+           IP "$ip"
+           ;;
+
+        2) echo -n "Ingresar el número telefonico: "
+           read telefono
+           CELULAR "$telefono"
+           ;;
+
+        3) echo -n "Ingresar dirección MAC a validar: "
+           read mac
+           MAC "$mac"
+           ;;
+
+        4) echo "Adiós..."
+           validchoice="TRUE"
+           ;;
+
+        *) echo "Opción inválida";;
+    esac
+done
